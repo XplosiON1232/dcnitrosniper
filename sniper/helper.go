@@ -21,15 +21,15 @@ import (
 
 var (
 	claimedDescriptions = []string{
-		"What competition 😉",
+		"What competition ",
 		"Another One! :smiling_face_with_3_hearts:",
 		"Ah shit, here we go again :rolling_eyes:",
-		"I'm on fire 🔥",
-		"I bet he's sorry he sent that 😉",
+		"I'm on fire ",
+		"I bet he's sorry he sent that ",
 	}
 
 	missedDescriptions = []string{
-		"I was on the toilet 🚽",
+		"I was on the toilet ",
 		"Sorry, I accidentally fell asleep :sleeping:",
 		"I'm sorry, I'll do better next time :heart_hands:",
 		"Don't give up on me, I won't let you down :pensive:",
@@ -79,30 +79,90 @@ func GetDiscordBuildNumber() (int, error) {
 		return bodyBytes, nil
 	}
 
-	responeBody, err := makeGetReq("https://discord.com/app")
-	if err != nil {
-		return 0, err
+	// Try different Discord URLs
+	urls := []string{
+		"https://discord.com/app",
+		"https://discord.com",
+		"https://discord.com/channels/@me",
 	}
 
-	discordFiles := regexp.MustCompile(`assets/+([a-z0-9]+)\.js`).FindAllString(string(responeBody), -1)
-	file_with_build_num := "https://discord.com/" + discordFiles[len(discordFiles)-2]
+	var lastErr error
+	for _, urlStr := range urls {
+		responeBody, err := makeGetReq(urlStr)
+		if err != nil {
+			lastErr = err
+			continue
+		}
 
-	responeBody, err = makeGetReq(file_with_build_num)
-	if err != nil {
-		return 0, err
+		// Try finding the build number directly in the HTML
+		buildMatches := regexp.MustCompile(`"buildNumber":"(\d+)"`).FindStringSubmatch(string(responeBody))
+		if len(buildMatches) > 1 {
+			client_build_number, err := strconv.Atoi(buildMatches[1])
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			return client_build_number, nil
+		}
+
+		// Try finding the build number in a different format
+		buildMatches = regexp.MustCompile(`BUILD_NUMBER:\s*"(\d+)"`).FindStringSubmatch(string(responeBody))
+		if len(buildMatches) > 1 {
+			client_build_number, err := strconv.Atoi(buildMatches[1])
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			return client_build_number, nil
+		}
+
+		// Look for script files
+		scriptFiles := regexp.MustCompile(`<script\s+[^>]*src="([^"]+)"`).FindAllStringSubmatch(string(responeBody), -1)
+		for _, match := range scriptFiles {
+			if len(match) < 2 {
+				continue
+			}
+			
+			scriptUrl := match[1]
+			if !strings.HasPrefix(scriptUrl, "http") {
+				if !strings.HasPrefix(scriptUrl, "/") {
+					scriptUrl = "/" + scriptUrl
+				}
+				scriptUrl = "https://discord.com" + scriptUrl
+			}
+
+			responeBody, err := makeGetReq(scriptUrl)
+			if err != nil {
+				continue
+			}
+
+			// Try to find the build number in the JS file
+			buildMatches := regexp.MustCompile(`"buildNumber"\s*:\s*"?(\d{6})"?`).FindStringSubmatch(string(responeBody))
+			if len(buildMatches) > 1 {
+				client_build_number, err := strconv.Atoi(buildMatches[1])
+				if err != nil {
+					continue
+				}
+				return client_build_number, nil
+			}
+
+			// Try the old format
+			buildNumberMatches := regexp.MustCompile(`"[0-9]{6}"`).FindAllString(string(responeBody), -1)
+			if len(buildNumberMatches) > 0 {
+				client_build_number_str := strings.Replace(buildNumberMatches[0], "\"", "", -1)
+				client_build_number, err := strconv.Atoi(client_build_number_str)
+				if err != nil {
+					continue
+				}
+				return client_build_number, nil
+			}
+		}
 	}
 
-	if err != nil {
-		return 0, err
+	if lastErr != nil {
+		return 0, lastErr
 	}
-
-	client_build_number_str := strings.Replace(regexp.MustCompile(`"[0-9]{6}"`).FindAllString(string(responeBody), -1)[0], "\"", "", -1)
-	client_build_number, err := strconv.Atoi(client_build_number_str)
-	if err != nil {
-		return 0, err
-	}
-
-	return client_build_number, nil
+	return 0, fmt.Errorf("could not find Discord build number in any location")
 }
 
 type GiftData struct {

@@ -150,7 +150,17 @@ func main() {
 	logger.Info("Fetched Discord Data", logger.FieldInt("build", global.DiscordBuildNumber))
 
 	// initialize request
-	var userAgent string = fmt.Sprintf("Discord/%d-IS/%s-%d", global.DiscordBuildNumber, strings.Split(global.Config.License.Key, "-")[3], time.Now().UnixNano())
+	var userAgent string
+	if global.Config.License.Key != "" {
+		keyParts := strings.Split(global.Config.License.Key, "-")
+		if len(keyParts) > 3 {
+			userAgent = fmt.Sprintf("Discord/%d-IS/%s-%d", global.DiscordBuildNumber, keyParts[3], time.Now().UnixNano())
+		} else {
+			userAgent = fmt.Sprintf("Discord/%d-IS/ANON-%d", global.DiscordBuildNumber, time.Now().UnixNano())
+		}
+	} else {
+		userAgent = fmt.Sprintf("Discord/%d-IS/ANON-%d", global.DiscordBuildNumber, time.Now().UnixNano())
+	}
 	request.Init(userAgent, global.SnipingToken)
 
 	// create a routine that will constantly update claim token
@@ -249,7 +259,19 @@ func main() {
 
 				runtime.ReadMemStats(&global.MemoryStats)
 
-				logger.CallSpinnerTitle(spinner, fmt.Sprintf("Sniping %s servers | %s/%s Alts (%s dead) | %s Messages | %s Invites | %s Attempts | %s Claimed | %s Missed | %s Invalid | %s Promocodes | %s MB/s", formatNumber(int64(atomic.LoadUint64(&global.LoadedServers))), formatNumber(int64(atomic.LoadUint64(&global.LoadedAlts))), formatNumber(int64(atomic.LoadUint64(&global.TotalAlts))), formatNumber(int64(atomic.LoadUint64(&global.DeadAlts))), formatNumber(int64(atomic.LoadUint64(&global.FoundMessages))), formatNumber(int64(atomic.LoadUint64(&global.FoundInvites))), formatNumber(int64(atomic.LoadUint64(&global.TotalAttempts))), formatNumber(int64(atomic.LoadUint64(&global.TotalClaimed))), formatNumber(int64(atomic.LoadUint64(&global.TotalMissed))), formatNumber(int64(atomic.LoadUint64(&global.TotalInvalid))), formatNumber(int64(atomic.LoadUint64(&global.FoundPromocodes))), formatNumber(int64(bToMb(global.MemoryStats.Alloc)))))
+				logger.CallSpinnerTitle(spinner, fmt.Sprintf("Sniping %s servers | %s/%s Alts (%s dead) | %s Messages | %s Invites | %s Attempts | %s Claimed | %s Missed | %s Invalid | %s Promocodes | %s MB/s",
+					formatNumber(int64(atomic.LoadUint64(&global.LoadedServers))),
+					formatNumber(int64(atomic.LoadUint64(&global.LoadedAlts))),
+					formatNumber(int64(atomic.LoadUint64(&global.TotalAlts))),
+					formatNumber(int64(atomic.LoadUint64(&global.DeadAlts))),
+					formatNumber(int64(atomic.LoadUint64(&global.FoundMessages))),
+					formatNumber(int64(atomic.LoadUint64(&global.FoundInvites))),
+					formatNumber(int64(atomic.LoadUint64(&global.TotalAttempts))),
+					formatNumber(int64(atomic.LoadUint64(&global.TotalClaimed))),
+					formatNumber(int64(atomic.LoadUint64(&global.TotalMissed))),
+					formatNumber(int64(atomic.LoadUint64(&global.TotalInvalid))),
+					formatNumber(int64(atomic.LoadUint64(&global.FoundPromocodes))),
+					formatNumber(int64(bToMb(global.MemoryStats.Alloc)))))
 
 				time.Sleep(time.Millisecond * 150)
 			}
