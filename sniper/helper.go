@@ -298,14 +298,14 @@ func WebhookSuccess(Code string, Delay time.Duration, Sniper, Type, Sender, Guil
 	})
 
 	embedData.Fields = append(embedData.Fields, embedFieldStruct{
-		Name:   "Guild ID",
-		Value:  "`" + GuildID + "`",
+		Name:   "Guild",
+		Value:  "`" + GuildID + " | " + GuildName + "`",
 		Inline: true,
 	})
 
 	embedData.Fields = append(embedData.Fields, embedFieldStruct{
-		Name:   "Guild Name",
-		Value:  "`" + GuildName + "`",
+		Name:   "Claimer",
+		Value:  "`" + Sniper + "`",
 		Inline: true,
 	})
 
@@ -382,14 +382,14 @@ func WebhookFail(Code string, Delay time.Duration, Sniper, Sender, GuildID, Guil
 	})
 
 	embedData.Fields = append(embedData.Fields, embedFieldStruct{
-		Name:   "Guild ID",
-		Value:  "`" + GuildID + "`",
+		Name:   "Guild",
+		Value:  "`" + GuildID + " | " + GuildName + "`",
 		Inline: true,
 	})
 
 	embedData.Fields = append(embedData.Fields, embedFieldStruct{
-		Name:   "Guild Name",
-		Value:  "`" + GuildName + "`",
+		Name:   "Claimer",
+		Value:  "`" + Sniper + "`",
 		Inline: true,
 	})
 
