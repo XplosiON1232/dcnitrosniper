@@ -345,6 +345,7 @@ func (sniper *Sniper) onMessageCreate(e *discows.DiscordMessage) {
 							atomic.AddUint64(&global.TotalMissed, 1)
 
 						case 404:
+							go WebhookFail(giftId, timeDiff, sniperUsername, authorName, guildId, guildName, giftData.Body)
 							go sniper.onGiftMiss(startTime, giftId, delayFormatted)
 
 							logger.Fail("Unknown gift code", logger.FieldString("code", giftId), logger.FieldString("delay", delayFormatted), logger.FieldString("sniper", sniperUsername), logger.FieldString("author", authorName), logger.FieldString("guild_id", guildId))
